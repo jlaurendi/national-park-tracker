@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useMemo, useState } from 'react';
-import { ArrowDown, ArrowUp, MapPinOff, Pencil, Trash2, X } from 'lucide-react';
+import { ArrowDown, ArrowUp, CalendarCheck, MapPinOff, Pencil, Trash2, X } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Chip } from '@/components/ui/Chip';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -14,7 +14,7 @@ import { TripForm } from './TripForm';
 import { TRIP_STATUS_LABELS, TRIP_STATUS_TONES } from './TripsPageContent';
 import { ParksMapLazy, type MapPin } from '@/components/map/ParksMapLazy';
 import { getPark } from '@/data/parks';
-import { formatDateRange } from '@/lib/dates';
+import { formatDateRange, todayDateOnly } from '@/lib/dates';
 import { newId } from '@/lib/records';
 import { useAppStore } from '@/store';
 import { useHydrated, useParkStatuses } from '@/store/selectors';
@@ -26,6 +26,7 @@ export function TripDetailContent({ tripId }: { tripId: string }) {
   const trip = useAppStore((s) => s.trips.find((t) => t.id === tripId));
   const updateTrip = useAppStore((s) => s.updateTrip);
   const deleteTrip = useAppStore((s) => s.deleteTrip);
+  const promptTripVisits = useAppStore((s) => s.promptTripVisits);
   const statuses = useParkStatuses();
   const [editOpen, setEditOpen] = useState(false);
 
@@ -109,6 +110,12 @@ export function TripDetailContent({ tripId }: { tripId: string }) {
     }
   }
 
+  // "Log visits" affordance for trips that already happened.
+  const hasUnvisitedStops = stops.some((s) => statuses.get(s.parkId) !== 'visited');
+  const lastTripDate = trip.endDate ?? trip.startDate;
+  const tripHasHappened =
+    trip.status === 'completed' || (lastTripDate !== undefined && lastTripDate < todayDateOnly());
+
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -125,6 +132,12 @@ export function TripDetailContent({ tripId }: { tripId: string }) {
           </p>
         </div>
         <div className="flex gap-2">
+          {hasUnvisitedStops && tripHasHappened && (
+            <Button size="sm" onClick={() => promptTripVisits(trip.id)}>
+              <CalendarCheck className="h-3.5 w-3.5" aria-hidden />
+              Log visits
+            </Button>
+          )}
           <Button variant="secondary" size="sm" onClick={() => setEditOpen(true)}>
             <Pencil className="h-3.5 w-3.5" aria-hidden />
             Edit

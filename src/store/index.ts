@@ -83,9 +83,13 @@ interface AppState {
   photos: Photo[];
   auth: AuthState;
   migrationOffer: MigrationOffer | null;
+  /** Trip id to offer "log visits for these stops" for (set when a trip is completed). */
+  tripVisitsPrompt: string | null;
 
   setAuth: (auth: AuthState) => void;
   dismissMigrationOffer: () => void;
+  promptTripVisits: (tripId: string) => void;
+  dismissTripVisitsPrompt: () => void;
   /** Refetch everything from the currently active repositories. */
   rehydrate: () => Promise<void>;
   hydrate: () => Promise<void>;
@@ -166,6 +170,7 @@ export const useAppStore = create<AppState>()((set, get) => {
     photos: [],
     auth: { status: 'loading' },
     migrationOffer: null,
+    tripVisitsPrompt: null,
 
     setAuth(auth) {
       set({ auth });
@@ -173,6 +178,14 @@ export const useAppStore = create<AppState>()((set, get) => {
 
     dismissMigrationOffer() {
       set({ migrationOffer: null });
+    },
+
+    promptTripVisits(tripId) {
+      set({ tripVisitsPrompt: tripId });
+    },
+
+    dismissTripVisitsPrompt() {
+      set({ tripVisitsPrompt: null });
     },
 
     async rehydrate() {
@@ -234,6 +247,10 @@ export const useAppStore = create<AppState>()((set, get) => {
       const next = touched({ ...existing, ...patch });
       await getRepositories().trips.put(next);
       set({ trips: replaceById(get().trips, next) });
+      // Completing a trip with stops → offer to log visits for them.
+      if (next.status === 'completed' && existing.status !== 'completed' && next.stops.length > 0) {
+        set({ tripVisitsPrompt: next.id });
+      }
     },
 
     async deleteTrip(id) {
