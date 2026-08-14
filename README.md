@@ -1,5 +1,7 @@
 # Park Tracker
 
+**Live: https://jlaurendi.github.io/national-park-tracker/**
+
 Track your visits to all 63 US national parks — plan trips, set goals, earn badges, and build a photo scrapbook.
 
 **v1 is frontend-only**: everything is stored in your browser (IndexedDB). No account, no server. The architecture is deliberately shaped so part 2 (accounts, subscriptions, sync) swaps the storage layer without touching the UI.
@@ -55,6 +57,10 @@ components/  →  store/ (Zustand)  →  lib/repositories (interfaces)  →  Dex
 ### Part 2 roadmap
 
 Accounts (Auth.js/Clerk) · Postgres with tables mirroring `src/types/domain.ts` 1:1 plus `user_id` · route handlers matching the `CrudRepository` shape · photo blobs to S3/R2 (IndexedDB demoted to cache) · Stripe subscription gating · a one-time "import my local data" flow that uploads the existing export bundle.
+
+## Deployment
+
+Pushes to `main` deploy to GitHub Pages via `.github/workflows/deploy.yml` (static export with `NEXT_PUBLIC_BASE_PATH=/national-park-tracker`). Because the site is fully static, all user data still lives in each visitor's own browser. The trip detail page uses `/trips/view?id=…` instead of a dynamic segment because user-generated ids can't be pre-rendered.
 
 ## Notes
 
