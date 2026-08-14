@@ -1,36 +1,62 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Park Tracker
 
-## Getting Started
+Track your visits to all 63 US national parks — plan trips, set goals, earn badges, and build a photo scrapbook.
 
-First, run the development server:
+**v1 is frontend-only**: everything is stored in your browser (IndexedDB). No account, no server. The architecture is deliberately shaped so part 2 (accounts, subscriptions, sync) swaps the storage layer without touching the UI.
+
+## Features
+
+- **Visit tracking** — log visits per park with date ranges, 1–5 star ratings, and notes
+- **63-park explorer** — searchable, filterable grid (state / region / status) and a static detail page per park with facts and hero imagery
+- **Interactive map** — Leaflet + OpenStreetMap, pins color-coded visited / planned / unvisited
+- **Trip planning** — group parks into ordered routes with target dates, drawn on a route map with numbered stops
+- **Goals** — "all 63", "any N", or specific lists (presets like the Utah Mighty 5), with computed progress and remaining-park chips
+- **Badges** — 15 achievements (milestones, state/region completion, themed sets) that earn *and revoke* honestly as visits change
+- **Scrapbook** — photos attach to visits; masonry gallery grouped by park, lightbox with caption editing, and a fullscreen autoplay slideshow with park interstitials
+- **Settings** — storage usage, persistent-storage protection, JSON export/import, clear-all
+
+## Stack
+
+Next.js (App Router) · React 19 · TypeScript · Tailwind CSS 4 · Zustand 5 · Dexie 4 (IndexedDB) · react-leaflet 5 · lucide-react · sonner · date-fns · Vitest
+
+## Getting started
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+npm run dev      # http://localhost:3000
+npm test         # domain + dataset unit tests (vitest)
+npm run lint
+npm run build
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## How data is stored
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+| Data | Where |
+|---|---|
+| Park reference data (63 parks) | Checked into the repo (`src/data/parks.ts`), statically rendered |
+| Visits, trips, goals, earned badges, photo metadata | IndexedDB via Dexie |
+| Photo images | IndexedDB blob tables — uploads are downscaled to ~2000px JPEG (plus a 400px thumb) before saving, so a typical photo costs a few hundred KB |
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Backups (Settings → Export) contain all records as JSON. Photo *image files* are not part of the JSON; on import, photo records whose images aren't present in the browser are skipped with a notice.
 
-## Learn More
+## Architecture (why part 2 is cheap)
 
-To learn more about Next.js, take a look at the following resources:
+```
+components/  →  store/ (Zustand)  →  lib/repositories (interfaces)  →  Dexie/IndexedDB
+                     ↓
+             lib/domain (pure functions: badges, goals, status, stats)
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- UI components never touch persistence; they read the store and call its actions.
+- The store persists through `Repositories` interfaces (`lib/repositories/types.ts`). `getRepositories()` is the single construction point — part 2 ships API-backed implementations and changes that one factory.
+- Records are born sync-ready: client-generated UUIDs, ISO `createdAt`/`updatedAt`, calendar dates as `'YYYY-MM-DD'` strings, and no browser types in any synced schema.
+- Domain logic (badge evaluation, goal progress) is pure TypeScript, unit-tested, and reusable server-side.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### Part 2 roadmap
 
-## Deploy on Vercel
+Accounts (Auth.js/Clerk) · Postgres with tables mirroring `src/types/domain.ts` 1:1 plus `user_id` · route handlers matching the `CrudRepository` shape · photo blobs to S3/R2 (IndexedDB demoted to cache) · Stripe subscription gating · a one-time "import my local data" flow that uploads the existing export bundle.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Notes
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- Park facts and images are derived from Wikipedia/Wikimedia Commons (public sources); images hotlink to `upload.wikimedia.org` at a pre-rendered 960px width with a local gradient fallback.
+- Browser storage is best-effort until the user grants persistence (Settings → Protect); export regularly if the data matters to you.

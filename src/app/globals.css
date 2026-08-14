@@ -1,26 +1,115 @@
 @import "tailwindcss";
 
+/*
+ * Design tokens — clean modern with nature-toned accents.
+ * Semantic variables here; Tailwind color names mapped in @theme inline below.
+ */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #fafaf9;
+  --foreground: #1c1917;
+  --card: #ffffff;
+  --card-foreground: #1c1917;
+  --muted: #f5f5f4;
+  --muted-foreground: #78716c;
+  --border: #e7e5e4;
+  --input: #d6d3d1;
+  --primary: #2e6e52;
+  --primary-hover: #275d46;
+  --primary-foreground: #ffffff;
+  --primary-soft: #eaf3ee;
+  --accent: #d97706;
+  --accent-soft: #fef3c7;
+  --accent-foreground: #92400e;
+  --danger: #b91c1c;
+  --danger-soft: #fee2e2;
+  --ring: #2e6e52;
+
+  --status-visited: #2e6e52;
+  --status-planned: #d97706;
+  --status-unvisited: #a8a29e;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #111412;
+    --foreground: #eeede9;
+    --card: #1a1e1b;
+    --card-foreground: #eeede9;
+    --muted: #232824;
+    --muted-foreground: #a2a297;
+    --border: #2c322e;
+    --input: #3a413c;
+    --primary: #4f9e77;
+    --primary-hover: #61b189;
+    --primary-foreground: #0b120e;
+    --primary-soft: #1c2b23;
+    --accent: #f59e0b;
+    --accent-soft: #33270e;
+    --accent-foreground: #fbbf24;
+    --danger: #f87171;
+    --danger-soft: #34191a;
+    --ring: #4f9e77;
+
+    --status-visited: #4f9e77;
+    --status-planned: #f59e0b;
+    --status-unvisited: #6c6a64;
+  }
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary-soft: var(--primary-soft);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-ring: var(--ring);
+  --color-status-visited: var(--status-visited);
+  --color-status-planned: var(--status-planned);
+  --color-status-unvisited: var(--status-unvisited);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans), system-ui, sans-serif;
+}
+
+/* Slideshow transitions: fade-through-black plus a slow Ken Burns drift. */
+@keyframes slide-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes ken-burns {
+  from { transform: scale(1); }
+  to { transform: scale(1.07); }
+}
+.slide-photo {
+  animation: slide-fade-in 700ms ease-out both, ken-burns 9s ease-out both;
+}
+.slide-title {
+  animation: slide-fade-in 700ms ease-out both;
+}
+
+/* Leaflet containers inherit page font; keep popups on-theme. */
+.leaflet-container {
+  font-family: var(--font-sans), system-ui, sans-serif;
+}
+.leaflet-popup-content-wrapper,
+.leaflet-popup-tip {
+  background: var(--card);
+  color: var(--card-foreground);
 }
