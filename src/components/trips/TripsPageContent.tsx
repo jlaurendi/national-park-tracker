@@ -32,7 +32,7 @@ function TripCard({ trip }: { trip: Trip }) {
 
   return (
     <Link
-      href={`/trips/${trip.id}`}
+      href={`/trips/view?id=${trip.id}`}
       className="flex flex-col gap-3 rounded-xl border border-border bg-card p-5 shadow-sm transition-shadow hover:shadow-md"
     >
       <div className="flex items-start justify-between gap-2">

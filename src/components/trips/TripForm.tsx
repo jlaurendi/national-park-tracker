@@ -61,7 +61,7 @@ function TripFields({ trip, onClose }: { trip?: Trip; onClose: () => void }) {
       } else {
         const created = await addTrip(input);
         onClose();
-        router.push(`/trips/${created.id}`);
+        router.push(`/trips/view?id=${created.id}`);
       }
     } finally {
       setSaving(false);

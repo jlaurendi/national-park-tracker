@@ -6,6 +6,7 @@
 
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
+import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import { MapContainer, Marker, Polyline, Popup, TileLayer, useMap } from 'react-leaflet';
 import { Expand } from 'lucide-react';
@@ -168,12 +169,13 @@ export default function ParksMap({
                   <p className="text-xs text-muted-foreground">
                     {park.states.join(' · ')} — {STATUS_LABELS[status]}
                   </p>
-                  <a
+                  {/* Link (not <a>) so the href picks up basePath on GitHub Pages. */}
+                  <Link
                     href={`/parks/${park.id}`}
                     className="text-xs font-medium text-primary hover:underline"
                   >
                     View park →
-                  </a>
+                  </Link>
                 </div>
               </Popup>
             )}

@@ -166,7 +166,7 @@ export function DashboardContent() {
             </CardHeader>
             <CardContent>
               {nextTrip ? (
-                <Link href={`/trips/${nextTrip.id}`} className="group flex flex-col gap-1">
+                <Link href={`/trips/view?id=${nextTrip.id}`} className="group flex flex-col gap-1">
                   <p className="font-medium group-hover:text-primary">{nextTrip.name}</p>
                   <p className="text-sm text-muted-foreground">
                     {nextTrip.stops.length} {nextTrip.stops.length === 1 ? 'stop' : 'stops'}
