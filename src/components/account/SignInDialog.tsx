@@ -88,7 +88,8 @@ function SignInFields({ onClose }: { onClose: () => void }) {
   return (
     <form onSubmit={handleCode} className="flex flex-col gap-4">
       <p className="text-sm text-muted-foreground">
-        We sent a 6-digit code to <span className="font-medium text-foreground">{email}</span>.
+        Check <span className="font-medium text-foreground">{email}</span> — open the sign-in
+        link on this device, or enter the 6-digit code if your email includes one.
       </p>
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="signin-code">Code</Label>

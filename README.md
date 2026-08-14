@@ -47,8 +47,10 @@ Sign-in emails (the 6-digit code) land in Mailpit at http://127.0.0.1:54324. Sch
 ### Hosted Supabase (production)
 
 1. Create a project, then `npx supabase link --project-ref <ref>` and `npx supabase db push`.
-2. In the dashboard, set Auth → Email Templates → Magic Link to include `{{ .Token }}` (see `supabase/templates/magic_link.html`) so sign-in sends a code instead of a link.
+2. Set Auth → URL Configuration: site URL + redirect allow-list to the deployed site.
 3. Set repository variables `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` so the Pages deploy builds with cloud sync enabled.
+
+**Email note:** free-tier projects on Supabase's built-in sender can't customize email templates and are limited to a couple of emails per hour — sign-in emails carry a *link* (handled automatically when it opens on the same device). Once a custom SMTP provider (e.g. Resend) is configured, set the Magic Link template to include `{{ .Token }}` (see `supabase/templates/magic_link.html`) and the same email also carries the 6-digit code the dialog accepts — which is what local dev does out of the box.
 
 ## How data is stored
 

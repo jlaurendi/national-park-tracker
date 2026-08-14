@@ -63,7 +63,11 @@ export function AccountCard() {
           </div>
         )}
       </CardContent>
-      <SignInDialog open={signInOpen} onClose={() => setSignInOpen(false)} />
+      {/* Also auto-closes when a sign-in link completes in this tab. */}
+      <SignInDialog
+        open={signInOpen && auth.status === 'signed-out'}
+        onClose={() => setSignInOpen(false)}
+      />
     </Card>
   );
 }
