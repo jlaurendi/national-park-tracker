@@ -4,7 +4,10 @@
 
 Track your visits to all 63 US national parks — plan trips, set goals, earn badges, and build a photo scrapbook.
 
-**v1 is frontend-only**: everything is stored in your browser (IndexedDB). No account, no server. The architecture is deliberately shaped so part 2 (accounts, subscriptions, sync) swaps the storage layer without touching the UI.
+Two storage modes, switched automatically by auth state:
+
+- **Signed out (or no Supabase configured):** everything lives in your browser (IndexedDB). No account, no server — the original v1 behavior.
+- **Signed in:** data syncs to a Supabase backend (Postgres + Storage) scoped to your account by row-level security. Sign-in is a passwordless email code. On first sign-in, the app offers to move your local data — photos included — into your account.
 
 ## Features
 
@@ -25,11 +28,27 @@ Next.js (App Router) · React 19 · TypeScript · Tailwind CSS 4 · Zustand 5 ·
 
 ```bash
 npm install
-npm run dev      # http://localhost:3000
+npm run dev      # http://localhost:3000 (local-only mode without Supabase env)
 npm test         # domain + dataset unit tests (vitest)
 npm run lint
 npm run build
 ```
+
+### Cloud sync in local dev
+
+```bash
+npx supabase start        # local Postgres/Auth/Storage in Docker; prints URL + anon key
+# put those values in .env.local (see .env.example), restart `npm run dev`
+npx supabase stop         # when done
+```
+
+Sign-in emails (the 6-digit code) land in Mailpit at http://127.0.0.1:54324. Schema lives in `supabase/migrations/`; `npx supabase db reset` reapplies it.
+
+### Hosted Supabase (production)
+
+1. Create a project, then `npx supabase link --project-ref <ref>` and `npx supabase db push`.
+2. In the dashboard, set Auth → Email Templates → Magic Link to include `{{ .Token }}` (see `supabase/templates/magic_link.html`) so sign-in sends a code instead of a link.
+3. Set repository variables `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` so the Pages deploy builds with cloud sync enabled.
 
 ## How data is stored
 

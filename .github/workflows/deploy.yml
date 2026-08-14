@@ -28,6 +28,10 @@ jobs:
       - run: npm run build
         env:
           NEXT_PUBLIC_BASE_PATH: /national-park-tracker
+          # Cloud sync (optional): set these as repository variables once the
+          # hosted Supabase project exists. Absent = the site runs local-only.
+          NEXT_PUBLIC_SUPABASE_URL: ${{ vars.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ vars.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
       - run: touch out/.nojekyll
       - uses: actions/configure-pages@v5
         with:

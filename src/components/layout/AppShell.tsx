@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { MountainSnow } from 'lucide-react';
 import { SidebarNav, MobileNav } from './SidebarNav';
+import { SyncStatusFooter } from '@/components/account/SyncStatusFooter';
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   return (
@@ -14,9 +15,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <span className="text-[15px] font-semibold tracking-tight">Park Tracker</span>
         </Link>
         <SidebarNav />
-        <p className="mt-auto px-6 py-4 text-xs text-muted-foreground">
-          63 national parks, one checklist.
-        </p>
+        <SyncStatusFooter />
       </aside>
 
       {/* Mobile top bar */}

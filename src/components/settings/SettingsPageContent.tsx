@@ -13,6 +13,7 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { ProgressBar } from '@/components/ui/Progress';
+import { AccountCard } from '@/components/account/AccountCard';
 import { formatBytes, useStorageEstimate } from '@/hooks/useStorageEstimate';
 import { requestPersistentStorage } from '@/lib/images';
 import { getRepositories } from '@/lib/repositories';
@@ -39,6 +40,8 @@ export function SettingsPageContent() {
   const clearAll = useAppStore((s) => s.clearAll);
   const photoCount = useAppStore((s) => s.photos.length);
   const visitCount = useAppStore((s) => s.visits.length);
+  const auth = useAppStore((s) => s.auth);
+  const cloudMode = auth.status === 'signed-in';
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
 
@@ -95,19 +98,25 @@ export function SettingsPageContent() {
   }
 
   async function handleClear() {
+    const scope = cloudMode ? 'from your account' : 'from this browser';
     const first = window.confirm(
-      'Delete ALL data — visits, trips, goals, badges, and photos? This cannot be undone.',
+      `Delete ALL data ${scope} — visits, trips, goals, badges, and photos? This cannot be undone.`,
     );
     if (!first) return;
     const second = window.confirm('Last check: really erase everything?');
     if (!second) return;
-    await clearAll();
-    await storage.refresh();
-    toast.success('All data cleared.');
+    try {
+      await clearAll();
+      await storage.refresh();
+      toast.success('All data cleared.');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Clearing data failed.');
+    }
   }
 
   return (
     <div className="mt-6 grid gap-4 md:grid-cols-2">
+      <AccountCard />
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -205,7 +214,8 @@ export function SettingsPageContent() {
         </CardHeader>
         <CardContent className="flex flex-wrap items-center justify-between gap-3">
           <p className="text-sm text-muted-foreground">
-            Erase every visit, trip, goal, badge, and photo from this browser.
+            Erase every visit, trip, goal, badge, and photo{' '}
+            {cloudMode ? 'from your account' : 'from this browser'}.
           </p>
           <Button variant="danger" onClick={handleClear}>
             Clear all data

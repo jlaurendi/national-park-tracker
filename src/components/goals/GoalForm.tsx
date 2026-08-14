@@ -76,6 +76,8 @@ function GoalFields({ goal, onClose }: { goal?: Goal; onClose: () => void }) {
         await addGoal(input);
       }
       onClose();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Saving the goal failed.');
     } finally {
       setSaving(false);
     }

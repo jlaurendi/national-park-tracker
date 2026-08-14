@@ -58,6 +58,22 @@ export interface PhotoInput {
   sortOrder: number;
 }
 
+export type AuthStatus = 'loading' | 'disabled' | 'signed-out' | 'signed-in';
+
+export interface AuthState {
+  status: AuthStatus;
+  email?: string;
+  userId?: string;
+}
+
+/** Counts of local records available to migrate into a fresh cloud account. */
+export interface MigrationOffer {
+  visits: number;
+  trips: number;
+  goals: number;
+  photos: number;
+}
+
 interface AppState {
   hydrated: boolean;
   visits: Visit[];
@@ -65,7 +81,13 @@ interface AppState {
   goals: Goal[];
   earnedBadges: EarnedBadge[];
   photos: Photo[];
+  auth: AuthState;
+  migrationOffer: MigrationOffer | null;
 
+  setAuth: (auth: AuthState) => void;
+  dismissMigrationOffer: () => void;
+  /** Refetch everything from the currently active repositories. */
+  rehydrate: () => Promise<void>;
   hydrate: () => Promise<void>;
 
   addVisit: (input: VisitInput) => Promise<Visit>;
@@ -142,9 +164,18 @@ export const useAppStore = create<AppState>()((set, get) => {
     goals: [],
     earnedBadges: [],
     photos: [],
+    auth: { status: 'loading' },
+    migrationOffer: null,
 
-    async hydrate() {
-      if (get().hydrated) return;
+    setAuth(auth) {
+      set({ auth });
+    },
+
+    dismissMigrationOffer() {
+      set({ migrationOffer: null });
+    },
+
+    async rehydrate() {
       const repos = getRepositories();
       const [visits, trips, goals, earnedBadges, photos] = await Promise.all([
         repos.visits.getAll(),
@@ -154,6 +185,11 @@ export const useAppStore = create<AppState>()((set, get) => {
         repos.photos.getAll(),
       ]);
       set({ hydrated: true, visits, trips, goals, earnedBadges, photos });
+    },
+
+    async hydrate() {
+      if (get().hydrated) return;
+      await get().rehydrate();
     },
 
     async addVisit(input) {

@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { Toaster } from "sonner";
 import { AppShell } from "@/components/layout/AppShell";
 import { StoreProvider } from "@/components/providers/StoreProvider";
+import { MigrationDialog } from "@/components/account/MigrationDialog";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -33,6 +34,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <body className="min-h-full">
         <StoreProvider>
           <AppShell>{children}</AppShell>
+          <MigrationDialog />
         </StoreProvider>
         <Toaster position="top-center" richColors />
       </body>

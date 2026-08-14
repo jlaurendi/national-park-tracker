@@ -76,6 +76,8 @@ function VisitFields({
         await addVisit(input);
       }
       onClose();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Saving the visit failed.');
     } finally {
       setSaving(false);
     }

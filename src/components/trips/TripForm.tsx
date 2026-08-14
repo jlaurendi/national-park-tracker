@@ -63,6 +63,8 @@ function TripFields({ trip, onClose }: { trip?: Trip; onClose: () => void }) {
         onClose();
         router.push(`/trips/view?id=${created.id}`);
       }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Saving the trip failed.');
     } finally {
       setSaving(false);
     }
