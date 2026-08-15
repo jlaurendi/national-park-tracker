@@ -31,6 +31,8 @@ interface ParksMapProps {
   showLegend?: boolean;
   /** 'continental' centers on the lower 48; 'fit' fits all pins. */
   defaultView?: 'continental' | 'fit';
+  /** When provided, unvisited parks get a quick "Mark visited" popup action. */
+  onLogVisit?: (park: Park) => void;
 }
 
 const CONTINENTAL_CENTER: [number, number] = [39, -98];
@@ -111,6 +113,7 @@ export default function ParksMap({
   showAllControl = false,
   showLegend = false,
   defaultView = 'continental',
+  onLogVisit,
 }: ParksMapProps) {
   const [map, setMap] = useState<L.Map | null>(null);
 
@@ -164,11 +167,19 @@ export default function ParksMap({
           >
             {interactive && (
               <Popup>
-                <div className="flex min-w-40 flex-col gap-1 py-0.5">
+                <div className="flex min-w-44 flex-col gap-1.5 py-0.5">
                   <p className="font-semibold leading-tight">{park.name}</p>
                   <p className="text-xs text-muted-foreground">
                     {park.states.join(' · ')} — {STATUS_LABELS[status]}
                   </p>
+                  {onLogVisit && status !== 'visited' && (
+                    <button
+                      onClick={() => onLogVisit(park)}
+                      className="inline-flex h-7 items-center justify-center gap-1 rounded-md bg-primary px-2.5 text-xs font-medium text-primary-foreground hover:bg-primary-hover"
+                    >
+                      Mark visited
+                    </button>
+                  )}
                   {/* Link (not <a>) so the href picks up basePath on GitHub Pages. */}
                   <Link
                     href={`/parks/${park.id}`}
