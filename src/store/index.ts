@@ -8,8 +8,11 @@ import { getRepositories } from '@/lib/repositories';
 import { baseRecord, nowIso, touched } from '@/lib/records';
 import { evaluateBadges } from '@/lib/domain/badges';
 import { computeGoalProgress } from '@/lib/domain/goals';
+import { visitedParkIds } from '@/lib/domain/parkStatus';
+import { tripHasHappened } from '@/lib/domain/trips';
+import { todayDateOnly } from '@/lib/dates';
 import { BADGES, BADGES_BY_ID } from '@/data/badges';
-import { PARKS } from '@/data/parks';
+import { PARKS, getPark } from '@/data/parks';
 import type {
   EarnedBadge,
   ExportBundle,
@@ -83,13 +86,14 @@ interface AppState {
   photos: Photo[];
   auth: AuthState;
   migrationOffer: MigrationOffer | null;
-  /** Trip id to offer "log visits for these stops" for (set when a trip is completed). */
-  tripVisitsPrompt: string | null;
 
   setAuth: (auth: AuthState) => void;
   dismissMigrationOffer: () => void;
-  promptTripVisits: (tripId: string) => void;
-  dismissTripVisitsPrompt: () => void;
+  /**
+   * Create visits for the trip's stops that have none yet (optionally limited
+   * to specific parks). Used automatically when trips happen; toasts with Undo.
+   */
+  logTripVisits: (tripId: string, onlyParkIds?: string[]) => Promise<Visit[]>;
   /** Refetch everything from the currently active repositories. */
   rehydrate: () => Promise<void>;
   hydrate: () => Promise<void>;
@@ -170,7 +174,6 @@ export const useAppStore = create<AppState>()((set, get) => {
     photos: [],
     auth: { status: 'loading' },
     migrationOffer: null,
-    tripVisitsPrompt: null,
 
     setAuth(auth) {
       set({ auth });
@@ -180,12 +183,46 @@ export const useAppStore = create<AppState>()((set, get) => {
       set({ migrationOffer: null });
     },
 
-    promptTripVisits(tripId) {
-      set({ tripVisitsPrompt: tripId });
-    },
+    async logTripVisits(tripId, onlyParkIds) {
+      const trip = get().trips.find((t) => t.id === tripId);
+      if (!trip) return [];
+      const visited = visitedParkIds(get().visits);
+      const stops = [...trip.stops]
+        .sort((a, b) => a.sortOrder - b.sortOrder)
+        .filter(
+          (s) =>
+            !visited.has(s.parkId) && (!onlyParkIds || onlyParkIds.includes(s.parkId)),
+        );
+      if (stops.length === 0) return [];
 
-    dismissTripVisitsPrompt() {
-      set({ tripVisitsPrompt: null });
+      const fallbackDate = trip.endDate ?? trip.startDate ?? todayDateOnly();
+      const created: Visit[] = stops.map((s) => ({
+        ...baseRecord(),
+        parkId: s.parkId,
+        startDate: s.targetDate ?? fallbackDate,
+      }));
+      const repos = getRepositories();
+      await Promise.all(created.map((v) => repos.visits.put(v)));
+      set({ visits: [...get().visits, ...created] });
+
+      const undoIds = created.map((v) => v.id);
+      toast.success(
+        created.length === 1
+          ? `${getPark(created[0].parkId)?.name ?? 'Park'} logged as visited`
+          : `Logged ${created.length} visits from “${trip.name}”`,
+        {
+          action: {
+            label: 'Undo',
+            onClick: () => {
+              void (async () => {
+                for (const id of undoIds) await get().deleteVisit(id);
+              })();
+            },
+          },
+        },
+      );
+      await reactToVisitChange();
+      return created;
     },
 
     async rehydrate() {
@@ -247,9 +284,19 @@ export const useAppStore = create<AppState>()((set, get) => {
       const next = touched({ ...existing, ...patch });
       await getRepositories().trips.put(next);
       set({ trips: replaceById(get().trips, next) });
-      // Completing a trip with stops → offer to log visits for them.
-      if (next.status === 'completed' && existing.status !== 'completed' && next.stops.length > 0) {
-        set({ tripVisitsPrompt: next.id });
+
+      // A trip that has happened implies its parks were visited — log them
+      // automatically (the toast offers Undo). Two triggers: the trip just
+      // became completed (all stops qualify), or stops were added to a trip
+      // that already happened (just the new ones).
+      const becameCompleted = next.status === 'completed' && existing.status !== 'completed';
+      if (becameCompleted) {
+        await get().logTripVisits(next.id);
+      } else if (tripHasHappened(next, todayDateOnly())) {
+        const addedParkIds = next.stops
+          .filter((s) => !existing.stops.some((e) => e.parkId === s.parkId))
+          .map((s) => s.parkId);
+        if (addedParkIds.length > 0) await get().logTripVisits(next.id, addedParkIds);
       }
     },
 

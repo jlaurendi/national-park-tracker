@@ -28,9 +28,13 @@ export function AddParkToTripMenu({ parkId, parkName }: { parkId: string; parkNa
 
   if (!hydrated) return null;
 
-  const openTrips = [...trips]
-    .filter((t) => t.status !== 'completed')
-    .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+  // Open trips first; completed trips still listed so visits can be recorded
+  // retroactively ("I did see this park on that trip").
+  const menuTrips = [...trips].sort(
+    (a, b) =>
+      Number(a.status === 'completed') - Number(b.status === 'completed') ||
+      b.updatedAt.localeCompare(a.updatedAt),
+  );
 
   async function toggle(tripId: string) {
     const trip = trips.find((t) => t.id === tripId);
@@ -44,6 +48,8 @@ export function AddParkToTripMenu({ parkId, parkName }: { parkId: string; parkNa
       });
       toast(`Removed ${parkName} from “${trip.name}”`);
     } else {
+      // If the trip already happened, updateTrip auto-logs the visit and
+      // shows its own toast with Undo.
       await updateTrip(trip.id, {
         stops: [...trip.stops, { id: newId(), parkId, sortOrder: trip.stops.length }],
       });
@@ -60,10 +66,10 @@ export function AddParkToTripMenu({ parkId, parkName }: { parkId: string; parkNa
       </Button>
       {open && (
         <div className="absolute right-0 z-20 mt-1 w-64 rounded-lg border border-border bg-card py-1 shadow-lg">
-          {openTrips.length === 0 && (
-            <p className="px-3 py-2 text-xs text-muted-foreground">No open trips yet.</p>
+          {menuTrips.length === 0 && (
+            <p className="px-3 py-2 text-xs text-muted-foreground">No trips yet.</p>
           )}
-          {openTrips.map((trip) => {
+          {menuTrips.map((trip) => {
             const included = trip.stops.some((s) => s.parkId === parkId);
             return (
               <button
@@ -71,7 +77,12 @@ export function AddParkToTripMenu({ parkId, parkName }: { parkId: string; parkNa
                 onClick={() => toggle(trip.id)}
                 className="flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-sm hover:bg-muted"
               >
-                <span className="truncate">{trip.name}</span>
+                <span className="truncate">
+                  {trip.name}
+                  {trip.status === 'completed' && (
+                    <span className="ml-1.5 text-xs text-muted-foreground">· completed</span>
+                  )}
+                </span>
                 <Check
                   className={cn('h-4 w-4 shrink-0 text-primary', !included && 'invisible')}
                   aria-hidden

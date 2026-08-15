@@ -4,7 +4,6 @@ import { Toaster } from "sonner";
 import { AppShell } from "@/components/layout/AppShell";
 import { StoreProvider } from "@/components/providers/StoreProvider";
 import { MigrationDialog } from "@/components/account/MigrationDialog";
-import { TripVisitsDialog } from "@/components/trips/TripVisitsDialog";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -36,7 +35,6 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <StoreProvider>
           <AppShell>{children}</AppShell>
           <MigrationDialog />
-          <TripVisitsDialog />
         </StoreProvider>
         <Toaster position="top-center" richColors />
       </body>

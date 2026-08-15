@@ -15,6 +15,7 @@ import { TRIP_STATUS_LABELS, TRIP_STATUS_TONES } from './TripsPageContent';
 import { ParksMapLazy, type MapPin } from '@/components/map/ParksMapLazy';
 import { getPark } from '@/data/parks';
 import { formatDateRange, todayDateOnly } from '@/lib/dates';
+import { tripHasHappened, unvisitedStopParkIds } from '@/lib/domain/trips';
 import { newId } from '@/lib/records';
 import { useAppStore } from '@/store';
 import { useHydrated, useParkStatuses } from '@/store/selectors';
@@ -26,7 +27,8 @@ export function TripDetailContent({ tripId }: { tripId: string }) {
   const trip = useAppStore((s) => s.trips.find((t) => t.id === tripId));
   const updateTrip = useAppStore((s) => s.updateTrip);
   const deleteTrip = useAppStore((s) => s.deleteTrip);
-  const promptTripVisits = useAppStore((s) => s.promptTripVisits);
+  const logTripVisits = useAppStore((s) => s.logTripVisits);
+  const visits = useAppStore((s) => s.visits);
   const statuses = useParkStatuses();
   const [editOpen, setEditOpen] = useState(false);
 
@@ -111,10 +113,8 @@ export function TripDetailContent({ tripId }: { tripId: string }) {
   }
 
   // "Log visits" affordance for trips that already happened.
-  const hasUnvisitedStops = stops.some((s) => statuses.get(s.parkId) !== 'visited');
-  const lastTripDate = trip.endDate ?? trip.startDate;
-  const tripHasHappened =
-    trip.status === 'completed' || (lastTripDate !== undefined && lastTripDate < todayDateOnly());
+  const unloggedParkIds = unvisitedStopParkIds(trip, visits);
+  const showLogVisits = unloggedParkIds.length > 0 && tripHasHappened(trip, todayDateOnly());
 
   return (
     <div className="flex flex-col gap-6">
@@ -132,12 +132,6 @@ export function TripDetailContent({ tripId }: { tripId: string }) {
           </p>
         </div>
         <div className="flex gap-2">
-          {hasUnvisitedStops && tripHasHappened && (
-            <Button size="sm" onClick={() => promptTripVisits(trip.id)}>
-              <CalendarCheck className="h-3.5 w-3.5" aria-hidden />
-              Log visits
-            </Button>
-          )}
           <Button variant="secondary" size="sm" onClick={() => setEditOpen(true)}>
             <Pencil className="h-3.5 w-3.5" aria-hidden />
             Edit
@@ -153,6 +147,24 @@ export function TripDetailContent({ tripId }: { tripId: string }) {
           </Button>
         </div>
       </div>
+
+      {showLogVisits && (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-primary/30 bg-primary-soft px-4 py-3">
+          <p className="flex items-center gap-2 text-sm">
+            <CalendarCheck className="h-4 w-4 shrink-0 text-primary" aria-hidden />
+            This trip already happened, but{' '}
+            <span className="font-semibold">
+              {unloggedParkIds.length === 1
+                ? `${getPark(unloggedParkIds[0])?.name ?? '1 park'} isn't`
+                : `${unloggedParkIds.length} parks aren't`}
+            </span>{' '}
+            logged as visited yet.
+          </p>
+          <Button size="sm" onClick={() => void logTripVisits(trip.id)}>
+            Log {unloggedParkIds.length === 1 ? 'the visit' : `${unloggedParkIds.length} visits`}
+          </Button>
+        </div>
+      )}
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,26rem)_1fr]">
         <div className="flex flex-col gap-3">
